@@ -268,7 +268,7 @@ class ApplicationContext(discord.abc.Messageable):
         return self.interaction.response.send_modal
 
     @property
-    @discord.utils.copy_doc(Interaction.respond)
+    #@discord.utils.copy_doc(Interaction.respond)
     def respond(
         self, *args, **kwargs
     ) -> Callable[..., Awaitable[Interaction | WebhookMessage]]:
