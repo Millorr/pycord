@@ -48,7 +48,6 @@ from typing import (
 from ..channel import PartialMessageable, _threaded_guild_channel_factory
 from ..enums import Enum as DiscordEnum
 from ..enums import (
-    IntegrationType,
     InteractionContextType,
     MessageType,
     SlashCommandOptionType,
@@ -261,7 +260,7 @@ class ApplicationCommand(_BaseCommand, Generic[CogT, P, T]):
         if guild_only:
             contexts = {InteractionContextType.guild}
         self.contexts: set[InteractionContextType] | None = contexts
-        self.integration_types: set[IntegrationType] | None = integration_types
+        self.integration_types = integration_types
 
     def __repr__(self) -> str:
         return f"<discord.commands.{self.__class__.__name__} name={self.name}>"
@@ -1277,7 +1276,7 @@ class SlashCommandGroup(ApplicationCommand):
         self.contexts: set[InteractionContextType] | None = contexts
         if guild_only:
             self.guild_only: bool | None = guild_only
-        self.integration_types: set[IntegrationType] | None = integration_types
+        self.integration_types = integration_types
 
         self.name_localizations: dict[str, str] = kwargs.get(
             "name_localizations", MISSING
