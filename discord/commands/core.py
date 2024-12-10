@@ -47,12 +47,7 @@ from typing import (
 
 from ..channel import PartialMessageable, _threaded_guild_channel_factory
 from ..enums import Enum as DiscordEnum
-from ..enums import (
-    InteractionContextType,
-    MessageType,
-    SlashCommandOptionType,
-    try_enum,
-)
+from ..enums import SlashCommandOptionType
 from ..errors import (
     ApplicationCommandError,
     ApplicationCommandInvokeError,
@@ -61,7 +56,6 @@ from ..errors import (
     InvalidArgument,
     ValidationError,
 )
-from ..member import Member
 from ..message import Attachment, Message
 from ..object import Object
 from ..role import Role
@@ -106,6 +100,14 @@ if TYPE_CHECKING:
     P = ParamSpec("P")
 else:
     P = TypeVar("P")
+
+
+class InteractionContextType(Enum):
+    """The interaction's context type"""
+
+    guild = 0
+    bot_dm = 1
+    private_channel = 2
 
 
 def wrap_callback(coro):
@@ -189,7 +191,7 @@ class ApplicationCommand(_BaseCommand, Generic[CogT, P, T]):
     cog = None
 
     def __init__(self, func: Callable, **kwargs) -> None:
-        from ..ext.commands.cooldowns import BucketType, CooldownMapping, MaxConcurrency
+        from ..ext.commands.cooldowns import BucketType, CooldownMapping
 
         cooldown = getattr(func, "__commands_cooldown__", kwargs.get("cooldown"))
 
