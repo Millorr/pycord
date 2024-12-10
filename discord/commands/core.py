@@ -47,14 +47,6 @@ from typing import (
 
 from ..channel import PartialMessageable, _threaded_guild_channel_factory
 from ..enums import Enum as DiscordEnum
-from ..errors import (
-    ApplicationCommandError,
-    ApplicationCommandInvokeError,
-    CheckFailure,
-    ClientException,
-    InvalidArgument,
-    ValidationError,
-)
 from ..message import Attachment, Message
 from ..object import Object
 from ..role import Role
@@ -196,14 +188,14 @@ def wrap_callback(coro):
     async def wrapped(*args, **kwargs):
         try:
             ret = await coro(*args, **kwargs)
-        except ApplicationCommandError:
-            raise
         except CommandError:
             raise
         except asyncio.CancelledError:
             return
-        except Exception as exc:
-            raise ApplicationCommandInvokeError(exc) from exc
+        except Exception:
+            raise
+        except:
+            raise
         return ret
 
     return wrapped
@@ -216,14 +208,12 @@ def hooked_wrapped_callback(command, ctx, coro):
     async def wrapped(arg):
         try:
             ret = await coro(arg)
-        except ApplicationCommandError:
-            raise
         except CommandError:
             raise
         except asyncio.CancelledError:
             return
-        except Exception as exc:
-            raise ApplicationCommandInvokeError(exc) from exc
+        except Exception:
+            raise
         finally:
             if (
                 hasattr(command, "_max_concurrency")
@@ -328,15 +318,11 @@ class ApplicationCommand(_BaseCommand, Generic[CogT, P, T]):
                 reference="https://discord.com/developers/docs/change-log#userinstallable-apps-preview",
             )
         if contexts and guild_only:
-            raise InvalidArgument(
-                "cannot pass both 'contexts' and 'guild_only' to ApplicationCommand"
-            )
+            raise
         if self.guild_ids and (
             (contexts is not None) or guild_only or integration_types
         ):
-            raise InvalidArgument(
-                "the 'contexts' and 'integration_types' parameters are not available for guild commands"
-            )
+            raise
 
         if guild_only:
             contexts = {InteractionContextType.guild}
@@ -431,9 +417,7 @@ class ApplicationCommand(_BaseCommand, Generic[CogT, P, T]):
         ctx.command = self
 
         if not await self.can_run(ctx):
-            raise CheckFailure(
-                f"The check functions for the command {self.name} failed"
-            )
+            raise
 
         if self._max_concurrency is not None:
             # For this application, context can be duck-typed as a Message
@@ -516,9 +500,7 @@ class ApplicationCommand(_BaseCommand, Generic[CogT, P, T]):
 
     async def can_run(self, ctx: ApplicationContext) -> bool:
         if not await ctx.bot.can_run(ctx):
-            raise CheckFailure(
-                f"The global check functions for command {self.name} failed."
-            )
+            raise
 
         predicates = self.checks
         if self.parent is not None:
@@ -868,9 +850,7 @@ class SlashCommand(ApplicationCommand):
             try:
                 next(params)
             except StopIteration:
-                raise ClientException(
-                    f'Callback for {self.name} command is missing "{p}" parameter.'
-                )
+                raise
 
         return params
 
@@ -962,7 +942,7 @@ class SlashCommand(ApplicationCommand):
             try:
                 p_name, p_obj = next(params)
             except StopIteration:  # not enough params for all the options
-                raise ClientException("Too many arguments passed to the options kwarg.")
+                raise
             p_obj = p_obj.annotation
 
             if not any(check(o, p_obj) for check in check_annotations):
@@ -1343,15 +1323,11 @@ class SlashCommandGroup(ApplicationCommand):
         if guild_only is not MISSING:
             warn_deprecated("guild_only", "contexts", "2.6")
         if contexts and guild_only:
-            raise InvalidArgument(
-                "cannot pass both 'contexts' and 'guild_only' to ApplicationCommand"
-            )
+            raise
         if self.guild_ids and (
             (contexts is not None) or guild_only or integration_types
         ):
-            raise InvalidArgument(
-                "the 'contexts' and 'integration_types' parameters are not available for guild commands"
-            )
+            raise
 
         # These are set to None and their defaults are then set when added to the bot
         self.contexts: set[InteractionContextType] | None = contexts
@@ -1745,25 +1721,19 @@ class ContextMenuCommand(ApplicationCommand):
         try:
             next(params)
         except StopIteration:
-            raise ClientException(
-                f'Callback for {self.name} command is missing "ctx" parameter.'
-            )
+            raise
 
         # next we have the 'user/message' as the next parameter
         try:
             next(params)
         except StopIteration:
             cmd = "user" if type(self) == UserCommand else "message"
-            raise ClientException(
-                f'Callback for {self.name} command is missing "{cmd}" parameter.'
-            )
+            raise
 
         # next there should be no more parameters
         try:
             next(params)
-            raise ClientException(
-                f"Callback for {self.name} command has too many parameters."
-            )
+            raise
         except StopIteration:
             pass
 
@@ -2159,42 +2129,30 @@ valid_locales = [
 def validate_chat_input_name(name: Any, locale: str | None = None):
     # Must meet the regex ^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$
     if locale is not None and locale not in valid_locales:
-        raise ValidationError(
-            f"Locale '{locale}' is not a valid locale, see {docs}/reference#locales for"
-            " list of supported locales."
-        )
+        raise
     error = None
     if not isinstance(name, str):
         error = TypeError(
             f'Command names and options must be of type str. Received "{name}"'
         )
     elif not re.match(r"^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$", name):
-        error = ValidationError(
-            r"Command names and options must follow the regex"
-            r" \"^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$\". "
-            "For more information, see"
-            f" {docs}/interactions/application-commands#application-command-object-"
+        error = r"Command names and options must follow the regex"\
+            r" \"^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$\". "\
+            "For more information, see"\
+            f" {docs}/interactions/application-commands#application-command-object-"\
             f'application-command-naming. Received "{name}"'
-        )
     elif (
         name.lower() != name
     ):  # Can't use islower() as it fails if none of the chars can be lowered. See #512.
-        error = ValidationError(
-            f'Command names and options must be lowercase. Received "{name}"'
-        )
+        error = f'Command names and options must be lowercase. Received "{name}"'
 
     if error:
-        if locale:
-            error.args = (f"{error.args[0]} in locale {locale}",)
-        raise error
+        raise
 
 
 def validate_chat_input_description(description: Any, locale: str | None = None):
     if locale is not None and locale not in valid_locales:
-        raise ValidationError(
-            f"Locale '{locale}' is not a valid locale, see {docs}/reference#locales for"
-            " list of supported locales."
-        )
+        raise
     error = None
     if not isinstance(description, str):
         error = TypeError(
@@ -2202,12 +2160,7 @@ def validate_chat_input_description(description: Any, locale: str | None = None)
             f' "{description}"'
         )
     elif not 1 <= len(description) <= 100:
-        error = ValidationError(
-            "Command and option description must be 1-100 characters long. Received"
-            f' "{description}"'
-        )
+        error = "Command and option description must be 1-100 characters long. Received", f' "{description}"'
 
     if error:
-        if locale:
-            error.args = (f"{error.args[0]} in locale {locale}",)
-        raise error
+        raise
